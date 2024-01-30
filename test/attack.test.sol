@@ -12,23 +12,23 @@ contract ReEntrancyRobberTest is Test {
     address private constant victim2 = address(12);
     address private constant attacker = address(13);
 
-    function setUp() public {
-        etherBank = new EtherBank();
-        attack = new Robber(etherBank);
-        setupVictim(victim1);
-        setupVictim(victim2);
-    }
-
-    function setupVictim(address victim, EtherBank etherBank) {
-        deal(victim, 1 * 1e18);
+    function setupVictim(address victim) private {
+        deal(victim, 5 * 1e18);
         vm.startPrank(victim);
         etherBank.deposit{value: 1 * 1e18}();
         vm.stopPrank();
     }
 
+    function setUp() public {
+        etherBank = new EtherBank();
+        robber = new Robber(address(etherBank));
+        setupVictim(victim1);
+        setupVictim(victim2);
+    }
+
     function test() public {
         uint256 contractBalanceBefore = etherBank.getBalance();
-        uint256 attackerBalBefore = attacker.getBalance();
+        uint256 attackerBalBefore = attacker.balance;
         console2.log(
             "Balance of EtherBank Contract before attack is ",
             contractBalanceBefore
@@ -39,11 +39,11 @@ contract ReEntrancyRobberTest is Test {
         );
 
         vm.startPrank(attacker);
-        attack.attack();
+        robber.steal();
         vm.stopPrank();
 
         uint256 contractBalanceAfter = etherBank.getBalance();
-        uint256 attackerBalAfter = attacker.getBalance();
+        uint256 attackerBalAfter = attacker.balance;
 
         console2.log(
             "Balance of EtherBank Contract after attack is ",

