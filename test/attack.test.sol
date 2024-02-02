@@ -6,56 +6,63 @@ import {Robber} from "../src/Robber.sol";
 import {EtherBank} from "../src/EtherBank.sol";
 
 contract ReEntrancyRobberTest is Test {
-    Robber private robber;
-    EtherBank private etherBank;
-    address private constant victim1 = address(11);
-    address private constant victim2 = address(12);
-    address private constant attacker = address(13);
-
-    function setupVictim(address victim) private {
-        deal(victim, 5 * 1e18);
-        vm.startPrank(victim);
-        etherBank.deposit{value: 1 * 1e18}();
-        vm.stopPrank();
-    }
+    EtherBank victim;
+    Robber attacker;
 
     function setUp() public {
-        etherBank = new EtherBank();
-        robber = new Robber(address(etherBank));
-        setupVictim(victim1);
-        setupVictim(victim2);
+        // Declaring our contracts
+        victim = new EtherBank();
+        attacker = new Robber(address(victim));
+        // Labelling for test traces
+        vm.label(address(victim), "victim_contract");
+        vm.label(address(attacker), "attacker_contract");
+        // Funding both parties
+        vm.deal(address(attacker), 1 ether); // It is not necessary to fund the attacker as you could just send eth along, but still
+        vm.deal(address(victim), 10 ether);
     }
 
-    function test() public {
-        uint256 contractBalanceBefore = etherBank.getBalance();
-        uint256 attackerBalBefore = attacker.balance;
+    function test_exploit() public {
         console2.log(
-            "Balance of EtherBank Contract before attack is ",
-            contractBalanceBefore
+            unicode"\n   📚📚 All things reentrancy: basic exploitation\n"
         );
         console2.log(
-            "Balance of Attacker before attack is ",
-            attackerBalBefore
+            "--------------------------------------------------------"
+        );
+        console2.log(
+            unicode"| => Victim's balance 🙂 %s 🙂",
+            address(victim).balance
+        );
+        console2.log(
+            unicode"| => Attacker's balance 👀 %s 👀",
+            address(attacker).balance
+        );
+        console2.log(
+            "--------------------------------------------------------"
         );
 
-        vm.startPrank(attacker);
-        robber.steal();
-        vm.stopPrank();
+        console2.log(unicode"\n\t💥💥💥💥 EXPLOITING... 💥💥💥💥\n");
 
-        uint256 contractBalanceAfter = etherBank.getBalance();
-        uint256 attackerBalAfter = attacker.balance;
+        vm.expectRevert();
+
+        attacker.steal();
+
+        // Conditions to fullfill
+        assertEq(address(victim).balance, 0);
+        assertEq(address(attacker).balance, 11 ether);
 
         console2.log(
-            "Balance of EtherBank Contract after attack is ",
-            contractBalanceAfter
+            "--------------------------------------------------------"
         );
-        console2.log("Balance of Attacker after attack is ", attackerBalAfter);
-
-        assertEq(contractBalanceAfter, 0, "Contract balance after attack");
-        assertEq(
-            attackerBalAfter,
-            contractBalanceBefore + attackerBalBefore,
-            "Balance of attacker"
+        console2.log(
+            unicode"| => Victim's balance ☠  %s ☠",
+            address(victim).balance
+        );
+        console2.log(
+            unicode"| => Attacker's balance 💯 %s 💯",
+            address(attacker).balance
+        );
+        console2.log(
+            "--------------------------------------------------------"
         );
     }
 }
